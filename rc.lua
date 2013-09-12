@@ -38,7 +38,7 @@ end
 
 -- {{{ Variable definitions
 -- Themes define colours, icons, and wallpapers
-beautiful.init("/home/edipotrebol/.config/awesome/themes/forrst/theme.lua")
+beautiful.init("~/.config/awesome/themes/forrst/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
 terminal = "gnome-terminal"
