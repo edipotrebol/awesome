@@ -1,11 +1,12 @@
 -- Standard awesome library
+require("vicious")
 require("awful")
 require("awful.autofocus")
 require("awful.rules")
 -- Theme handling library
 require("beautiful")
 -- Notification library
-require("naughty")
+--require("naughty")
 
 -- Load Debian menu entries
 require("debian.menu")
@@ -37,13 +38,11 @@ end
 
 -- {{{ Variable definitions
 -- Themes define colours, icons, and wallpapers
---beautiful.init("/usr/share/awesome/themes/default/theme.lua")
-beautiful.init("/home/pmartin/.config/awesome/themes/forrst/theme.lua")
+beautiful.init("~/.config/awesome/themes/forrst/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
 terminal = "gnome-terminal"
---editor = os.getenv("EDITOR") or "editor"
-editor = "vim"
+editor = os.getenv("EDITOR") or "vim"
 editor_cmd = terminal .. " -e " .. editor
 
 -- Default modkey.
@@ -68,10 +67,40 @@ layouts_simple =
         awful.layout.suit.floating,
         awful.layout.suit.max.fullscreen
     }
+
 -- }}}
 
 -- {{{ Tags
--- Define a tag table which hold all screen tags.
+
+-- gold = 0.618
+-- tags = {
+--     --names  = { "♏",    "⌥",     "⌘",      "♒",      "☊",        "♓",     "♐",      "✿",  "♉"  },
+--     --names = {  "1:code", "2:web", "3:chat", "4:term", "5:media", "6:work", "7:mail", "8:gimp", "9:play" },
+--     { name = "♏",  layout = layouts[1], mwfact = 0.5 },
+--     { name = "♐",   layout = layouts[1], mwfact = 0.55 },
+--     { name = "⌘",  layout = layouts[1], mwfact = 0.6 },
+--     --{ name = "✿♉♒",  layout = layouts[1], mwfact = 0.4, nmaster = 1, ncol = 2 },
+--     { name = "☊", layout = layouts_simple[1], mwfact = 0.65 },
+--     { name = "♒",  layout = layouts[1], mwfact = gold },
+--     --{ name = "♒",  layout = layouts[1] },
+--     { name = "⌥",  layout = layouts_simple[1], mwfact = 0.8 },
+--     { name = "♓",  layout = layouts[12], hide = true },
+-- }
+
+-- for s = 1, screen.count() do
+--     --tags[s] = {}
+--     for i, v in ipairs(tags) do
+--         tags[s][i] = tag({ name = v.name })
+--         tags[s][i].screen = s
+--         awful.tag.setproperty(tags[s][i], "layout", v.layout)
+--         awful.tag.setproperty(tags[s][i], "mwfact", v.mwfact)
+--         awful.tag.setproperty(tags[s][i], "ncol", v.ncol)
+--         awful.tag.setproperty(tags[s][i], "nmaster", v.nmaster)
+--         awful.tag.setproperty(tags[s][i], "hide",   v.hide)
+--     end
+--     tags[s][1].selected = true
+-- end
+
 tags = {
     names  = { "shell", "web", "editor", "media", "alt1", "alt2" },
     layout = { layouts[1], layouts_simple[1], layouts_simple[1], layouts_simple[1], layouts[1], layouts[1] }
@@ -79,9 +108,34 @@ tags = {
 for s = 1, screen.count() do
     tags[s] = awful.tag(tags.names, s, tags.layout)
 end
+
+--}}}
+
 -- }}}
 
 -- {{{ Menu
+
+-- {"Take screenshot", "import -window root ~/screenshot.png"}
+
+myvolumemenu = {
+    {"VolMute", "amixer -D pulse set Master 1+ mute"},
+    {"VolUnmute", "amixer -D pulse set Master 1+ unmute"},
+    {"VolInc", "amixer set Master 10%+"},
+    {"VolDec", "amixer set Master 10%-"}
+}
+
+myadminmenu = {
+    {"Volume", myvolumemenu}
+}
+
+myshutdownmenu = { 
+	{ "Shutdown", "gksudo halt" },
+	{ "Reboot", "gksudo reboot" },
+	{ "LockScreen", "slock" },
+	{ "Screensaver", "xscreensaver-command -lock" },
+	{ "Suspend", "gksudo acpitool -s" }
+}
+
 -- Create a laucher widget and a main menu
 myawesomemenu = {
    { "manual", terminal .. " -e man awesome" },
@@ -90,10 +144,10 @@ myawesomemenu = {
    { "quit", awesome.quit }
 }
 
-
-
 mymainmenu = awful.menu({ items = { { "awesome", myawesomemenu, beautiful.awesome_icon },
-                                    { "Debian", debian.menu.Debian_menu.Debian },
+                                    --{ "Debian", debian.menu.Debian_menu.Debian },
+                                    { "Admin", myadminmenu },
+				                    { "shutdown", '~/.config/awesome/shutdown_dialog.sh'},
                                     { "open terminal", terminal }
                                   }
                         })
@@ -104,6 +158,68 @@ mylauncher = awful.widget.launcher({ image = image(beautiful.awesome_icon),
 
 -- {{{ Wibox
 -- Create a textclock widget
+
+-- Network usage widget
+--Initialize widget
+
+volume_widget = widget({ type = "textbox", name = "tb_volume",
+    align = "center" })
+function update_volume(widget)
+    local fd = io.popen("amixer sget Master")
+    local status = fd:read("*all")
+    fd:close()
+                                                                     
+    local volume = tonumber(string.match(status, "(%d?%d?%d)%%")) / 100
+    -- volume = string.format("% 3d", volume)
+    status = string.match(status, "%[(o[^%]]*)%]")
+    -- starting colour
+    local sr, sg, sb = 0x3F, 0x3F, 0x3F
+    -- ending colour
+    local er, eg, eb = 0xDC, 0xDC, 0xCC
+    local ir = volume * (er - sr) + sr
+    local ig = volume * (eg - sg) + sg
+    local ib = volume * (eb - sb) + sb
+    interpol_colour = string.format("%.2x%.2x%.2x", ir, ig, ib)
+    if string.find(status, "on", 1, true) then
+        volume = " <span background='#" .. interpol_colour .. "'>   </span>"
+    else
+        volume = " <span color='red' background='#" .. interpol_colour .. "'> M </span>"
+    end
+    widget.text = volume
+end
+
+update_volume(volume_widget)
+awful.hooks.timer.register(1, function () update_volume(volume_widget) end)
+
+netwidget = widget({ type = "textbox" })
+-- Register widget
+vicious.register(netwidget, vicious.widgets.net, '<span color="#ffffff">Down:${eth0 down_kb}</span> <span color="#ffffff">Up:${eth0 up_kb}</span>', 3)
+
+-- Memory widget
+memwidget = widget({ type = "textbox" })
+-- Register widget
+--vicious.register(memwidget, vicious.widgets.mem, '<span color="#ffffff">Mem: $1% ($2MB/$3MB)</span>', 13)
+vicious.register(memwidget, vicious.widgets.mem, '<span color="#ffffff">M$1%</span>', 13)
+
+--graphical CPU Widget
+-- Initialize widget
+cpuwidget = awful.widget.graph()
+--Graph properties
+--cpuwidget:set_width(50)
+--cpuwidget:set_background_color("#494B4F")
+--cpuwidget:set_color("#FF5656")
+--cpuwidget:set_gradient_colors({ "#FF5656", "#88A175", "#AECF96" })
+
+-- text CPU Widget
+cpuwidget = widget({ type = "textbox" })
+-- Register widget
+vicious.register(cpuwidget, vicious.widgets.cpu, '<span color="#ffffff">CPU$1%</span>')
+
+--Seperators Widget
+seperator = widget({ type = "textbox" })
+seperator.text  = "|"
+
+--Text clock widget
 mytextclock = awful.widget.textclock({ align = "right" })
 
 -- Create a systray
@@ -185,6 +301,16 @@ for s = 1, screen.count() do
         },
         mylayoutbox[s],
         mytextclock,
+	seperator,
+    volume_widget,
+    seperator,
+	--mybattmon,
+	--seperator,
+	netwidget,
+	seperator,
+	cpuwidget,
+	seperator,
+	memwidget,
         s == 1 and mysystray or nil,
         mytasklist[s],
         layout = awful.widget.layout.horizontal.rightleft
@@ -286,6 +412,8 @@ clientkeys = awful.util.table.join(
         end)
 )
 
+
+
 -- Compute the maximum number of digit we need, limited to 9
 keynumber = 0
 for s = 1, screen.count() do
@@ -333,6 +461,7 @@ clientbuttons = awful.util.table.join(
 -- Set keys
 root.keys(globalkeys)
 -- }}}
+--
 
 -- {{{ Rules
 awful.rules.rules = {
@@ -353,14 +482,10 @@ awful.rules.rules = {
       properties = { floating = true } },
     { rule = { class = "firefox" },
       properties = { floating = true } },
-    { rule = { class = "kupfer" },
-      properties = { floating = true } },
-
     -- Set Firefox to always map on tags number 2 of screen 1.
     --{ rule = { class = "Firefox" },
     --  properties = { tag = tags[1][2] } },
 }
--- }}}
 -- }}}
 
 -- {{{ Signals
@@ -392,5 +517,7 @@ end)
 
 client.add_signal("focus", function(c) c.border_color = beautiful.border_focus end)
 client.add_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
+-- }}}
 
-awful.util.spawn_with_shell("kupfer")
+-- Autostart Apps
+--os.execute("nm-applet &")
