@@ -38,7 +38,7 @@ end
 
 -- {{{ Variable definitions
 -- Themes define colours, icons, and wallpapers
-beautiful.init("~/.config/awesome/themes/forrst/theme.lua")
+beautiful.init("/home/edipotrebol/.config/awesome/themes/forrst/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
 terminal = "gnome-terminal"
@@ -509,13 +509,15 @@ awful.rules.rules = {
                      focus = true,
                      keys = clientkeys,
                      buttons = clientbuttons } },
+    { rule = { class = "MPlayer" },
+      properties = { floating = true } },
+    { rule = { class = "pinentry" },
+      properties = { floating = true } },
     { rule = { class = "gimp" },
       properties = { floating = true } },
     { rule = { class = "chromium-browser" },
       properties = { floating = true } },
     { rule = { class = "firefox" },
-      properties = { floating = true } },
-    { rule = { class = "spotify" },
       properties = { floating = true } },
     -- Set Firefox to always map on tags number 2 of screen 1.
     --{ rule = { class = "Firefox" },
@@ -556,3 +558,4 @@ client.add_signal("unfocus", function(c) c.border_color = beautiful.border_norma
 
 -- Autostart Apps
 os.execute("nm-applet &")
+awful.util.spawn_with_shell("kupfer")
