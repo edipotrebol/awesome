@@ -398,7 +398,8 @@ globalkeys = awful.util.table.join(
     -- Standard program
     awful.key({ modkey,           }, "Return", function () awful.util.spawn(terminal) end),
     awful.key({ modkey, "Control" }, "r", awesome.restart),
-    awful.key({ modkey, "Shift"   }, "q", awesome.quit),
+    awful.key({ modkey, "Shift"   }, "w", awesome.quit),
+    awful.key({ modkey, "Shift"   }, "q", function () awful.util.spawn("shutdown"); end),
 
     awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)    end),
     awful.key({ modkey,           }, "h",     function () awful.tag.incmwfact(-0.05)    end),
@@ -557,5 +558,7 @@ client.add_signal("unfocus", function(c) c.border_color = beautiful.border_norma
 -- }}}
 
 -- Autostart Apps
-os.execute("nm-applet &")
-awful.util.spawn_with_shell("kupfer")
+--os.execute("nm-applet &")
+awful.util.spawn_with_shell("~/.config/awesome/run_once /run_once nm-applet")
+awful.util.spawn_with_shell("~/.config/awesome/run_once kupfer")
+awful.util.spawn_with_shell("~/.config/awesome/run_once zeal")
